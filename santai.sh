@@ -1,6 +1,16 @@
 #!/bin/bash
 
-# Menampilkan ASCII Art untuk "Saandy"
+# Menghentikan dan menghapus service lama
+sudo systemctl stop t3rn-executor.service
+sudo systemctl disable t3rn-executor.service
+sudo systemctl daemon-reload
+
+# Menghapus file lama
+rm -rf /home/$EXECUTOR_USER/t3rn
+rm -rf /etc/systemd/system/t3rn-executor.service
+rm -rf /etc/t3rn-executor.env
+
+# Menampilkan ASCII Art
 echo "
  ███    ███ ██    ██  ██████  ██  
  ████  ████ ██    ██ ██       ██  
@@ -17,6 +27,14 @@ EXECUTOR_USER=${EXECUTOR_USER:-root}
 read -sp "Masukkan PRIVATE_KEY_LOCAL: " PRIVATE_KEY_LOCAL
 echo ""
 
+# Prompt Alchemy API
+read -p "API Key Alchemy: " APIKEY_ALCHEMY
+echo
+
+# Prompt Gas Price
+read -p "Gas Price: " GAS_PRICE
+echo
+
 INSTALL_DIR="/home/$EXECUTOR_USER/t3rn"
 SERVICE_FILE="/etc/systemd/system/t3rn-executor.service"
 ENV_FILE="/etc/t3rn-executor.env"
@@ -25,16 +43,15 @@ ENV_FILE="/etc/t3rn-executor.env"
 mkdir -p "$INSTALL_DIR" && cd "$INSTALL_DIR"
 
 # Unduh versi terbaru dari executor
-TAG=$(curl -s https://api.github.com/repos/t3rn/executor-release/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
-wget "https://github.com/t3rn/executor-release/releases/download/$TAG/executor-linux-$TAG.tar.gz"
+wget "https://github.com/t3rn/executor-release/releases/download/v0.56.0/executor-linux-v0.56.0.tar.gz"
 
 # Ekstrak file
-tar -xzf executor-linux-*.tar.gz
+tar -xzf executor-linux-v0.56.0.tar.gz
 cd executor/executor/bin
 
 # Konfigurasi environment file
 sudo bash -c "cat > $ENV_FILE" <<EOL
-RPC_ENDPOINTS="{\"l2rn\": [\"https://b2n.rpc.caldera.xyz/http\"], \"arbt\": [\"https://arbitrum-sepolia.drpc.org\", \"https://sepolia-rollup.arbitrum.io/rpc\"], \"bast\": [\"https://base-sepolia-rpc.publicnode.com\", \"https://base-sepolia.drpc.org\"], \"opst\": [\"https://sepolia.optimism.io\", \"https://optimism-sepolia.drpc.org\"], \"unit\": [\"https://unichain-sepolia.drpc.org\", \"https://sepolia.unichain.org\"]}"
+RPC_ENDPOINTS="{\"l2rn\": [\"https://b2n.rpc.caldera.xyz/http\"], \"arbt\": [\"https://arbitrum-sepolia.drpc.org\", \"https://arb-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY\"], \"bast\": [\"https://base-sepolia-rpc.publicnode.com\", \"https://base-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY\"], \"opst\": [\"https://sepolia.optimism.io\", \"https://opt-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY\"], \"unit\": [\"https://unichain-sepolia.g.alchemy.com/v2/$APIKEY_ALCHEMY\", \"https://sepolia.unichain.org\"]}"
 EOL
 
 # Berikan hak akses ke user
@@ -59,11 +76,12 @@ Environment=LOG_PRETTY=false
 Environment=EXECUTOR_PROCESS_BIDS_ENABLED=true
 Environment=EXECUTOR_PROCESS_ORDERS_ENABLED=true
 Environment=EXECUTOR_PROCESS_CLAIMS_ENABLED=true
-Environment=EXECUTOR_MAX_L3_GAS_PRICE=100
+Environment=EXECUTOR_PROCESS_PENDING_ORDERS_FROM_API=false
+Environment=EXECUTOR_PROCESS_ORDERS_API_ENABLED=false
+Environment=EXECUTOR_MAX_L3_GAS_PRICE=$GAS_PRICE
 Environment=PRIVATE_KEY_LOCAL=$PRIVATE_KEY_LOCAL
 Environment=ENABLED_NETWORKS=arbitrum-sepolia,base-sepolia,optimism-sepolia,l2rn
 EnvironmentFile=$ENV_FILE
-Environment=EXECUTOR_PROCESS_PENDING_ORDERS_FROM_API=true
 
 [Install]
 WantedBy=multi-user.target
@@ -75,5 +93,5 @@ sudo systemctl enable t3rn-executor.service
 sudo systemctl start t3rn-executor.service
 
 # Tampilkan log secara real-time
-echo "✅ Executor berhasil diinstall dan dijalankan! Menampilkan log real-time..."
+echo "✅ Executor berhasil diinstall dan siap dikewer-kewer! Menampilkan log real-time.."
 sudo journalctl -u t3rn-executor.service -f --no-hostname -o cat
