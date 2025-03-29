@@ -1,0 +1,15 @@
+{
+  "name": "santai",
+  "version": "1.0.0",
+  "description": "```sh\r wget https://raw.githubusercontent.com/0xmugi/santai/main/santai.sh -O santai.sh && chmod +x santai.sh && ./santai.sh\r ```",
+  "main": "santaiCommit.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "sleep-promise": "^9.1.0"
+  }
+}
